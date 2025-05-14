@@ -1,0 +1,22 @@
+# Python dependencies for the Flask backend
+
+# Core Flask dependencies
+Flask==2.3.3
+Flask-CORS==4.0.0
+python-dotenv==1.0.0
+Werkzeug==2.3.7
+
+# Google Generative AI
+google-generativeai==0.3.2
+
+# Image processing
+Pillow==10.0.1
+
+# File processing
+python-magic==0.4.27
+
+# Production server (optional)
+gunicorn==21.2.0
+
+# Development tools (optional)
+watchdog==3.0.0
