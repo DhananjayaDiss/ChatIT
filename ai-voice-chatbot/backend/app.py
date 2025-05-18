@@ -2,14 +2,16 @@ import os
 import base64
 import io
 import mimetypes
+import requests
 from PIL import Image
 import google.generativeai as genai
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import json
 from datetime import datetime
+from io import BytesIO
 
 # Load environment variables
 load_dotenv()
@@ -55,6 +57,10 @@ sessions = {}  # Store chat sessions by session ID
 
 # Session timeout in hours
 SESSION_TIMEOUT_HOURS = int(os.getenv('SESSION_TIMEOUT_HOURS', 24))
+
+# ElevenLabs API configuration
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1"
 
 # Session management
 def get_or_create_session(session_id):
@@ -315,6 +321,102 @@ def get_supported_formats():
         'max_file_size': f'{MAX_SIZE / (1024*1024):.0f}MB'
     })
 
+@app.route('/api/tts', methods=['POST'])
+def text_to_speech():
+    """Convert text to speech using ElevenLabs API."""
+    try:
+        data = request.json
+        text = data.get('text')
+        voice_id = data.get('voice_id', '21m00Tcm4TlvDq8ikWAM')  # Default voice ID - Rachel
+        model_id = data.get('model_id', 'eleven_monolingual_v1')
+        
+        # Validate required parameters
+        if not text:
+            return jsonify({'error': 'Text is required'}), 400
+        
+        if not ELEVENLABS_API_KEY:
+            return jsonify({'error': 'ElevenLabs API key not configured'}), 500
+        
+        # Request headers
+        headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": ELEVENLABS_API_KEY
+        }
+        
+        # Request body
+        body = {
+            "text": text,
+            "model_id": model_id,
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.5
+            }
+        }
+        
+        # Make request to ElevenLabs API
+        response = requests.post(
+            f"{ELEVENLABS_API_URL}/text-to-speech/{voice_id}",
+            json=body,
+            headers=headers
+        )
+        
+        # Check if request was successful
+        if response.status_code == 200:
+            # Return audio file
+            audio_data = BytesIO(response.content)
+            audio_data.seek(0)
+            return send_file(
+                audio_data,
+                mimetype="audio/mpeg",
+                as_attachment=True,
+                download_name="speech.mp3"
+            )
+        else:
+            # Return error message
+            try:
+                error_data = response.json()
+                return jsonify(error_data), response.status_code
+            except:
+                return jsonify({'error': f'ElevenLabs API returned status code {response.status_code}'}), response.status_code
+    
+    except Exception as e:
+        print(f"TTS Error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/voices', methods=['GET'])
+def get_voices():
+    """Get available voices from ElevenLabs API."""
+    try:
+        if not ELEVENLABS_API_KEY:
+            return jsonify({'error': 'ElevenLabs API key not configured'}), 500
+        
+        # Request headers
+        headers = {
+            "Accept": "application/json",
+            "xi-api-key": ELEVENLABS_API_KEY
+        }
+        
+        # Make request to ElevenLabs API
+        response = requests.get(
+            f"{ELEVENLABS_API_URL}/voices",
+            headers=headers
+        )
+        
+        # Check if request was successful
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            try:
+                error_data = response.json()
+                return jsonify(error_data), response.status_code
+            except:
+                return jsonify({'error': f'ElevenLabs API returned status code {response.status_code}'}), response.status_code
+    
+    except Exception as e:
+        print(f"Get Voices Error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint for monitoring."""
@@ -322,7 +424,8 @@ def health_check():
         'status': 'healthy',
         'active_sessions': len(sessions),
         'model': model._model_name,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now().isoformat(),
+        'elevenlabs_api': bool(ELEVENLABS_API_KEY)
     })
 
 # Serve frontend files (catch-all route should be last)
@@ -341,6 +444,7 @@ if __name__ == "__main__":
     print(f"Using Gemini model: {model._model_name}")
     print(f"Frontend folder: {app.static_folder}")
     print(f"Max file size: {MAX_SIZE / (1024*1024):.0f}MB")
+    print(f"ElevenLabs API configured: {bool(ELEVENLABS_API_KEY)}")
     
     # Clean up sessions on startup (optional)
     print("Starting with clean session state...")

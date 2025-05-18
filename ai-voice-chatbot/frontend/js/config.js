@@ -42,6 +42,19 @@ export const Config = {
     continuous: true,
     interimResults: true
   },
+  
+  // Voice configuration
+  voice: {
+    useElevenlabs: true, // Set to true to use ElevenLabs, false to use Web Speech API
+    defaultVoice: 'Rachel', // Default ElevenLabs voice
+    rate: 0.9,
+    pitch: 1,
+    volume: 0.8,
+    settings: {
+      stability: 0.5,
+      similarityBoost: 0.5
+    }
+  },
 
   // File upload configuration
   fileUpload: {
@@ -72,7 +85,7 @@ export const Config = {
     scaleInDuration: 0.3
   },
 
-  // API endpoints - Update these for production
+  // API endpoints
   api: {
     chat: '/api/chat',
     newChat: '/api/new-chat',
@@ -80,6 +93,8 @@ export const Config = {
     sessions: '/api/sessions',
     cleanupSessions: '/api/cleanup-sessions',
     supportedFormats: '/api/supported-formats',
+    tts: '/api/tts',
+    voices: '/api/voices',
     health: '/health'
   },
 
@@ -88,5 +103,16 @@ export const Config = {
     count: 15,
     sizeRange: { min: 2, max: 6 },
     animationDuration: { min: 4, max: 8 }
+  },
+  
+  // ElevenLabs configuration
+  elevenlabs: {
+    defaultModel: 'eleven_monolingual_v1',
+    voiceSettings: {
+      stability: 0.5,
+      similarityBoost: 0.5,
+      style: 0.0,
+      useSpeakerBoost: true
+    }
   }
 };
