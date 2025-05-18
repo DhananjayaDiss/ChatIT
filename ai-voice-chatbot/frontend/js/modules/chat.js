@@ -236,14 +236,15 @@ export class ChatManager {
     `;
     voiceBtn.setAttribute('data-text', text);
     
+    const self = this; // Store reference to ChatManager
     voiceBtn.addEventListener('click', function() {
-      const text = this.getAttribute('data-text');
+      const text = this.getAttribute('data-text'); // 'this' now refers to the button
       if (this.classList.contains('playing')) {
-        this.managers.voice.stopSpeaking();
+        self.managers.voice.stopSpeaking(); // Use 'self' to access managers
       } else {
-        this.managers.voice.speakText(text, this);
+        self.managers.voice.speakText(text, this);
       }
-    }.bind(this));
+    });
     
     controlsDiv.appendChild(voiceBtn);
     return controlsDiv;
