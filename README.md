@@ -1,4 +1,4 @@
-# AI Voice Chatbot
+# AI Multimodal Chat Application for Education using Gemini 2.0 flash API and ElevenLabs API
 
 A modern, interactive AI chatbot with voice recognition, file upload, drawing capabilities, and camera integration. Built with Flask backend and vanilla JavaScript frontend.
 
